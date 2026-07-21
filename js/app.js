@@ -201,19 +201,26 @@
   };
 
   // ---- routing --------------------------------------------------------------
+  var listScroll = 0; // remember where the list/map was when opening a detail (mobile)
   function go(id) { location.hash = id ? "/tech/" + id : "/"; }
   function route() {
     var h = location.hash.replace(/^#/, "");
     var m = h.match(/^\/tech\/(.+)$/);
     var id = m && byId[m[1]] ? m[1] : null;
+    var wasList = !state.selectedId;
     state.selectedId = id;
     save("selected", id);
     api.scenario = state.scenario;
     if (id) {
+      if (wasList) listScroll = window.scrollY; // stash list position before leaving it
       detailHandle = window.Views.renderDetail(el.stage, byId[id], api);
+      document.body.classList.add("detail-open");
+      window.scrollTo(0, 0); // open the detail from its top (mobile full-screen view)
     } else {
       detailHandle = null;
       window.Views.renderOverview(el.stage, filtered(), api);
+      document.body.classList.remove("detail-open");
+      if (!wasList) { var y = listScroll; requestAnimationFrame(function () { window.scrollTo(0, y); }); }
     }
     renderList();
   }

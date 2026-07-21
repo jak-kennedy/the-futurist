@@ -278,6 +278,43 @@ body {
 
 .ov-hint { text-align: center; font-size: 12.5px; color: var(--ink-3); margin-top: 24px; }
 
+/* ---------- map: quadrant view + toggle ------------------------------------ */
+.ov-plot-headings { min-width: 0; }
+.ov-map-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; flex: none; }
+.ov-mt-btn { border: 0; background: transparent; padding: 8px 15px; min-height: 38px;
+  font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--ink-2); cursor: pointer; }
+.ov-mt-btn:hover { color: var(--ink-0); }
+.ov-mt-btn.is-active { background: var(--accent); color: #fff; }
+.ov-scatter-view { display: none; }
+.ov-plot-wrap.showing-scatter .ov-quad-view { display: none; }
+.ov-plot-wrap.showing-scatter .ov-scatter-view { display: block; }
+
+.ov-quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  grid-template-areas: "shots reshapers" "tail contained"; }
+.q-reshapers { grid-area: reshapers; } .q-shots { grid-area: shots; }
+.q-contained { grid-area: contained; } .q-tail { grid-area: tail; }
+.ov-quad { border: 1px solid var(--line-soft); border-radius: 14px; background: var(--surface-solid);
+  padding: 15px 15px 13px; display: flex; flex-direction: column; gap: 12px; }
+.ov-quad.q-reshapers { border-color: color-mix(in srgb, var(--accent) 32%, var(--line-soft));
+  background: color-mix(in srgb, var(--accent) 3%, var(--surface-solid)); }
+.ov-quad-head { display: flex; align-items: baseline; gap: 10px; }
+.ov-quad-title { font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .12em; color: var(--ink-0); }
+.ov-quad-sub { font-size: 11.5px; color: var(--ink-2); }
+.ov-quad-count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-2);
+  border: 1px solid var(--line); border-radius: 20px; padding: 2px 8px; }
+.ov-quad-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ov-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 36px;
+  border: 1px solid var(--line); border-radius: 22px; background: var(--bg-0);
+  padding: 6px 13px; cursor: pointer; color: var(--ink-0); font-family: var(--font-body); font-size: 13px;
+  transition: border-color .15s, transform .1s, box-shadow .15s; }
+.ov-chip:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  transform: translateY(-1px); box-shadow: var(--shadow-1); }
+.ov-chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.ov-chip-name { font-weight: 500; }
+.ov-chip-nums { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); }
+.ov-quad-empty { font-size: 12px; color: var(--ink-3); }
+
 /* ===== DETAIL ===== */
 .detail { padding: 0 0 80px; }
 .detail-hero { position: relative; padding: 40px 56px 30px; max-width: 1480px;
@@ -617,7 +654,8 @@ body {
 }
 @media (max-width: 860px) {
   body { overflow: auto; }
-  .topbar { height: auto; flex-wrap: wrap; gap: 12px; padding: 14px 18px; }
+  .topbar { height: auto; flex-wrap: wrap; gap: 12px;
+    padding: max(14px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) 14px max(18px, env(safe-area-inset-left)); }
   .scenario-switch { flex-wrap: wrap; }
   .scenario-label { padding-left: 4px; }
   .layout { grid-template-columns: 1fr; height: auto; }
@@ -628,6 +666,37 @@ body {
   .ov-title { font-size: 30px; }
   .detail-name { font-size: 28px; }
   .ov-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  /* --- mobile master-detail: a selected technology takes over the screen --- */
+  body.detail-open .rail { display: none; }
+  body.detail-open .layout { border-bottom: 0; }
+  .detail-hero { padding: 0 20px 24px; }
+  /* promote the back control to a full-bleed sticky bar with a real tap target */
+  .detail-back {
+    position: sticky; top: 0; z-index: 30;
+    width: calc(100% + 40px); margin: 0 -20px 18px;
+    box-sizing: border-box; min-height: 48px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 20px; border-radius: 0;
+    box-shadow: none; border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg-0) 88%, transparent);
+    backdrop-filter: blur(8px);
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* quadrant map: single column in priority order; scatter/toggle are desktop-only */
+  .ov-quad-grid { grid-template-columns: 1fr;
+    grid-template-areas: "reshapers" "shots" "contained" "tail"; }
+  .ov-map-toggle { display: none; }
+  .ov-plot-wrap.showing-scatter .ov-quad-view { display: block; }
+  .ov-plot-wrap.showing-scatter .ov-scatter-view { display: none; }
+
+  /* comfortable tap targets + clear the home-bar at the foot of scroll views */
+  .star-btn { min-width: 40px; min-height: 40px; display: inline-flex;
+    align-items: center; justify-content: center; }
+  .overview { padding-bottom: calc(48px + env(safe-area-inset-bottom)); }
+  .stage { padding-bottom: env(safe-area-inset-bottom); }
+  body.detail-open .stage { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001s !important; transition-duration: .001s !important; }

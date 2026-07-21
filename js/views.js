@@ -13,6 +13,7 @@
   function pct(v) { return Math.round(v * 100) + "%"; }
   var SCEN_LABEL = { optimistic: "Believers", consensus: "Consensus", skeptical: "Skeptics" };
   var STATUS_LABEL = { speculative: "Speculative", lab: "In the lab", pilot: "Piloting", scaling: "Scaling" };
+  var mapMode = "quad"; // "quad" (default) | "scatter" — desktop map presentation
 
   /* ========================== OVERVIEW ("THE MAP") ========================== */
   function renderOverview(stage, techs, api) {
@@ -33,22 +34,81 @@
         statCard(nearTerm, "arriving by 2040 (" + SCEN_LABEL[scen].toLowerCase() + " clock)") +
         statCard(highConv, "high-conviction & high-consequence") +
       '</div>' +
-      '<div class="ov-plot-wrap">' +
+      '<div class="ov-plot-wrap' + (mapMode === "scatter" ? " showing-scatter" : "") + '">' +
         '<div class="ov-plot-head">' +
-          '<h3>Probability × Consequence</h3>' +
-          '<p>x: probability the milestone is met by 2056 &nbsp;&middot;&nbsp; y: how much it reshapes life</p>' +
+          '<div class="ov-plot-headings">' +
+            '<h3>Probability × Consequence</h3>' +
+            '<p>How likely each technology is to arrive by 2056, against how much it would reshape life.</p>' +
+          '</div>' +
+          '<div class="ov-map-toggle" role="tablist" aria-label="Map view">' +
+            '<button class="ov-mt-btn" data-mode="quad">Quadrants</button>' +
+            '<button class="ov-mt-btn" data-mode="scatter">Scatter</button>' +
+          '</div>' +
         '</div>' +
-        scatterSVG(techs, api) +
-        '<div class="ov-legend">' + legendHTML() + '</div>' +
+        '<div class="ov-quad-view">' + quadrantHTML(techs, api) + '</div>' +
+        '<div class="ov-scatter-view">' + scatterSVG(techs, api) +
+          '<div class="ov-legend">' + legendHTML() + '</div>' +
+        '</div>' +
       '</div>' +
-      '<p class="ov-hint">Click any star to open it &middot; use the left rail to filter, sort, and rank &middot; the scenario switch up top bends every timeline.</p>' +
+      '<p class="ov-hint">Tap any technology to open it &middot; use the left rail to filter, sort, and rank &middot; the scenario switch up top bends every timeline.</p>' +
     '</div>';
     stage.innerHTML = html;
 
-    // wire dots
-    Array.prototype.forEach.call(stage.querySelectorAll(".scatter-dot"), function (d) {
+    // wire scatter dots + quadrant chips → open detail
+    Array.prototype.forEach.call(stage.querySelectorAll(".scatter-dot, .ov-chip"), function (d) {
       d.addEventListener("click", function () { api.onSelect(d.getAttribute("data-id")); });
     });
+    // wire the quadrant/scatter toggle
+    Array.prototype.forEach.call(stage.querySelectorAll(".ov-mt-btn"), function (btn) {
+      btn.classList.toggle("is-active", btn.getAttribute("data-mode") === mapMode);
+      btn.addEventListener("click", function () {
+        mapMode = btn.getAttribute("data-mode");
+        renderOverview(stage, techs, api);
+      });
+    });
+  }
+
+  // Group the technologies into four probability×consequence quadrants (thresholds
+  // mirror the app's own bands: probability >= 60%, consequence >= 8). Reads as a
+  // story rather than a chart, and stacks cleanly on a phone.
+  function quadrantHTML(techs, api) {
+    var Q = {
+      reshapers: { title: "Near-certain reshapers", sub: "high odds · high impact", cls: "q-reshapers", items: [] },
+      shots:     { title: "High-stakes long shots", sub: "lower odds · high impact", cls: "q-shots", items: [] },
+      contained: { title: "Likely, more contained", sub: "high odds · mid impact", cls: "q-contained", items: [] },
+      tail:      { title: "The long tail",          sub: "lower odds · lower impact", cls: "q-tail", items: [] }
+    };
+    techs.forEach(function (t) {
+      var hp = t.probability.value >= 0.6, hc = t.consequence >= 8;
+      var k = hp && hc ? "reshapers" : (!hp && hc ? "shots" : (hp && !hc ? "contained" : "tail"));
+      Q[k].items.push(t);
+    });
+    function card(key) {
+      var q = Q[key];
+      q.items.sort(function (a, b) {
+        return (b.probability.value * b.consequence) - (a.probability.value * a.consequence);
+      });
+      var chips = q.items.map(function (t) {
+        return '<button class="ov-chip" data-id="' + t.id + '">' +
+          '<i class="dot" style="background:' + t.domainColor + '"></i>' +
+          '<span class="ov-chip-name">' + esc(t.shortName) + (api.isStarred(t.id) ? " ★" : "") + '</span>' +
+          '<span class="ov-chip-nums">' + Math.round(t.probability.value * 100) + '·' + t.consequence + '</span>' +
+          '</button>';
+      }).join("");
+      return '<div class="ov-quad ' + q.cls + '">' +
+        '<div class="ov-quad-head">' +
+          '<span class="ov-quad-title">' + q.title + '</span>' +
+          '<span class="ov-quad-sub">' + q.sub + '</span>' +
+          '<span class="ov-quad-count">' + q.items.length + '</span>' +
+        '</div>' +
+        '<div class="ov-quad-chips">' + (chips || '<span class="ov-quad-empty">none in view</span>') + '</div>' +
+      '</div>';
+    }
+    // DOM order = mobile priority (reshapers first); CSS grid-area re-positions
+    // them into the spatial 2×2 on desktop.
+    return '<div class="ov-quad-grid">' +
+      card("reshapers") + card("shots") + card("contained") + card("tail") +
+    '</div>';
   }
 
   function statCard(num, label) {
@@ -158,6 +218,9 @@
     s += '</svg>';
     return s;
   }
+
+  // normalize to exactly one trailing sentence-period (source strings vary)
+  function endDot(s) { s = String(s).trim(); return /[.!?]$/.test(s) ? s : s + "."; }
 
   /* ============================== DETAIL ==================================== */
   function renderDetail(stage, tech, api) {
@@ -311,7 +374,7 @@
     }
 
     return '<div class="detail-meta">' + dialCol + conseqCol + arrCol + convCol + mktCol + '</div>' +
-      '<p class="prob-caption"><b>' + esc(p.definition) + '.</b> Range ' + pct(p.range[0]) + '–' + pct(p.range[1]) + '. ' + esc(p.basis) + '.</p>' +
+      '<p class="prob-caption"><b>' + esc(endDot(p.definition)) + '</b> Range ' + pct(p.range[0]) + '–' + pct(p.range[1]) + '. ' + esc(endDot(p.basis)) + '</p>' +
       viewLine;
   }
 

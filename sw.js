@@ -1,6 +1,6 @@
 /* The Futurist — service worker. Offline-first, cache all local assets.
    Bump CACHE when any precached file changes to force a refresh. */
-const CACHE = "futurist-v1";
+const CACHE = "futurist-v2";
 
 const SHELL = [
   "./",
