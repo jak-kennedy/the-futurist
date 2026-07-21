@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>The Futurist · Horizon 2056</title>
+<!-- PWA: installable, offline. Purely additive; inert over file://. -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#ffffff" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Futurist" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Spline+Sans:wght@300..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- atmosphere -->
+  <div class="bg-field" aria-hidden="true">
+    <canvas id="starfield"></canvas>
+    <div class="bg-grain"></div>
+    <div class="bg-glow bg-glow-a"></div>
+    <div class="bg-glow bg-glow-b"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">✷</span>
+      <div class="brand-text">
+        <h1>The Futurist</h1>
+        <p>An observatory of the next thirty years &middot; Horizon <span class="mono">2056</span></p>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT RAIL -->
+    <aside class="rail" id="rail">
+      <div class="rail-search">
+        <input type="search" id="search" placeholder="Search technologies…" autocomplete="off" />
+      </div>
+
+      <div class="rail-controls">
+        <details class="filter-block" open>
+          <summary>Domains</summary>
+          <div class="chip-row" id="domain-filters"></div>
+        </details>
+
+        <details class="filter-block">
+          <summary>Probability by 2056</summary>
+          <div class="chip-row" id="prob-filters">
+            <button class="chip is-active" data-band="all">All</button>
+            <button class="chip" data-band="high">Likely &middot; &ge;60%</button>
+            <button class="chip" data-band="mid">Toss-up &middot; 30–60%</button>
+            <button class="chip" data-band="low">Long shot &middot; &lt;30%</button>
+          </div>
+        </details>
+
+        <details class="filter-block">
+          <summary>Maturity today</summary>
+          <div class="chip-row" id="status-filters">
+            <button class="chip is-active" data-status="all">All</button>
+            <button class="chip" data-status="speculative">Speculative</button>
+            <button class="chip" data-status="lab">In the lab</button>
+            <button class="chip" data-status="pilot">Piloting</button>
+            <button class="chip" data-status="scaling">Scaling</button>
+          </div>
+        </details>
+
+        <div class="sort-row">
+          <label for="sort">Sort</label>
+          <select id="sort">
+            <option value="probability">Probability ↓</option>
+            <option value="conviction">Conviction ↓</option>
+            <option value="consequence">Consequence ↓</option>
+            <option value="arrival">Arrival year ↑</option>
+            <option value="ranking">My ranking</option>
+            <option value="starred">Starred first</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="rail-meta">
+        <span id="result-count"></span>
+        <button id="reset-filters" class="link-btn" title="Clear all filters">reset</button>
+      </div>
+
+      <ul class="tech-list" id="tech-list"></ul>
+
+      <footer class="rail-foot">
+        <span class="mono" id="starred-count">0 starred</span>
+        <span class="rail-foot-hint">drag to rank ↕</span>
+      </footer>
+    </aside>
+
+    <!-- MAIN STAGE -->
+    <main class="stage" id="stage"></main>
+  </div>
+
+  <!-- data registry (load order matters) -->
+  <script src="data/_schema.js"></script>
+  <script src="data/intelligence.js"></script>
+  <script src="data/energy.js"></script>
+  <script src="data/biology.js"></script>
+  <script src="data/machines.js"></script>
+  <script src="data/planet-space.js"></script>
+  <script src="data/security-defense.js"></script>
+  <script src="data/money-institutions.js"></script>
+
+  <!-- supply-chain deep dives (registered into window.FUTURIST_CHAINS) -->
+  <script src="data/chains-intelligence.js"></script>
+  <script src="data/chains-energy.js"></script>
+  <script src="data/chains-biology.js"></script>
+  <script src="data/chains-machines.js"></script>
+  <script src="data/chains-planet-space.js"></script>
+  <script src="data/chains-security-defense.js"></script>
+  <script src="data/chains-money-institutions.js"></script>
+
+  <!-- investable map (registered into window.FUTURIST_INVEST) -->
+  <script src="data/invest-intelligence.js"></script>
+  <script src="data/invest-energy.js"></script>
+  <script src="data/invest-biology.js"></script>
+  <script src="data/invest-machines.js"></script>
+  <script src="data/invest-planet-space.js"></script>
+  <script src="data/invest-security-defense.js"></script>
+  <script src="data/invest-money-institutions.js"></script>
+
+  <!-- app -->
+  <script src="js/timeline.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- PWA service worker: only registers over http(s)/localhost (no-op on file://). -->
+  <script>
+    if ("serviceWorker" in navigator &&
+        (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
